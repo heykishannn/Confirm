@@ -33,7 +33,7 @@
   </style>
 </head>
 <body>
-  <h1>Confirming your email...</h1>
+  <h1 id="status">Confirming your email...</h1>
   <div class="loader"></div>
 
   <script type="module">
@@ -50,23 +50,29 @@
       return {
         access_token: params.get('access_token'),
         refresh_token: params.get('refresh_token'),
+        error: params.get('error'),
+        error_description: params.get('error_description'),
       };
     };
 
-    const { access_token, refresh_token } = getParams();
+    const { access_token, refresh_token, error, error_description } = getParams();
+    const status = document.getElementById('status');
 
-    if (access_token && refresh_token) {
+    if (error) {
+      status.innerText = `❌ ${error_description.replace(/\+/g, ' ')}`;
+    } else if (access_token && refresh_token) {
       supabase.auth.setSession({ access_token, refresh_token })
         .then(() => {
+          status.innerText = "✅ Email verified!";
           setTimeout(() => {
-            window.location.href = 'index.html';
+            window.location.href = "../"; // or your dashboard page
           }, 1500);
         })
         .catch(() => {
-          alert('❌ Error verifying email. Please try again.');
+          status.innerText = "❌ Session setup failed.";
         });
     } else {
-      alert('⚠️ Invalid confirmation link.');
+      status.innerText = "⚠️ Invalid confirmation link.";
     }
   </script>
 </body>
