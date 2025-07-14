@@ -1,79 +1,137 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Email Confirmation</title>
-  <style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Confirm Your Account | Pro Battle</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    :root { --golden-color: #FFD700; --dark-bg: #0a0a0a; --success-color: #28a745; --error-color: #dc3545; }
     body {
-      margin: 0;
-      padding: 0;
-      background-color: #0d0d0d;
-      color: gold;
-      font-family: 'Segoe UI', sans-serif;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      flex-direction: column;
-      text-align: center;
+        font-family: 'Segoe UI', sans-serif;
+        background-color: var(--dark-bg);
+        color: #ccc;
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        text-align: center;
     }
-    .loader {
-      margin-top: 20px;
-      width: 40px;
-      height: 40px;
-      border: 5px solid gold;
-      border-top: 5px solid transparent;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
+    .status-box {
+        padding: 40px;
+        max-width: 400px;
+        width: 90%;
     }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    .status-icon {
+        font-size: 60px;
+        margin-bottom: 25px;
     }
-  </style>
+    #status-title {
+        color: #fff;
+        font-size: 2em;
+        font-weight: 700;
+        margin-bottom: 15px;
+    }
+    #status-message {
+        font-size: 1em;
+        line-height: 1.6;
+    }
+    /* Spinner Animation */
+    .fa-spinner {
+        color: var(--golden-color);
+        animation: spin 1.5s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    /* Success and Error Colors */
+    .success { color: var(--success-color); }
+    .error { color: var(--error-color); }
+
+    /* Pop-in animation for icons */
+    .fa-circle-check, .fa-circle-xmark {
+        animation: pop-in 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    @keyframes pop-in {
+        0% { transform: scale(0.5); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    /* Button Style */
+    .redirect-btn {
+        display: none; /* Hidden by default */
+        margin-top: 30px;
+        padding: 12px 30px;
+        background: linear-gradient(90deg, #FFD700, #f0c400);
+        color: #121212;
+        border: none;
+        border-radius: 50px;
+        font-size: 1.1em;
+        font-weight: 700;
+        cursor: pointer;
+        text-transform: uppercase;
+        text-decoration: none;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .redirect-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    }
+</style>
 </head>
 <body>
-  <h1 id="status">Confirming your email...</h1>
-  <div class="loader"></div>
 
-  <script type="module">
-    import { createClient } from 'https://esm.sh/@supabase/supabase-js'
+<div class="status-box">
+    <i id="status-icon" class="status-icon fa-solid fa-spinner fa-spin"></i>
+    <h2 id="status-title">Verifying Account...</h2>
+    <p id="status-message">Please wait while we confirm your email address. This may take a moment.</p>
+    <a id="redirect-button" href="user.html" class="redirect-btn">Proceed to App</a>
+</div>
 
-    const supabase = createClient(
-      'https://fysqufhsyebiteodyeqn.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5c3F1ZmhzeWViaXRlb2R5ZXFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIzMzA4MjUsImV4cCI6MjA2NzkwNjgyNX0.aPHRpZEh42ksSzotLTIAUDgdMkg2IqHGc69wx6gUbf0'
-    );
+<script>
+    const SUPABASE_URL = 'https://fysqufhsyebiteodyeqn.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5c3F1ZmhzeWViaXRlb2R5ZXFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIzMzA4MjUsImV4cCI6MjA2NzkwNjgyNX0.aPHRpZEh42ksSzotLTIAUDgdMkg2IqHGc69wx6gUbf0';
+    const { createClient } = supabase;
+    const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const getParams = () => {
-      let query = window.location.hash || window.location.search;
-      let params = new URLSearchParams(query.replace(/^#/, '').replace(/^\?/, ''));
-      return {
-        access_token: params.get('access_token'),
-        refresh_token: params.get('refresh_token'),
-        error: params.get('error'),
-        error_description: params.get('error_description'),
-      };
-    };
+    const statusIcon = document.getElementById('status-icon');
+    const statusTitle = document.getElementById('status-title');
+    const statusMessage = document.getElementById('status-message');
+    const redirectButton = document.getElementById('redirect-button');
 
-    const { access_token, refresh_token, error, error_description } = getParams();
-    const status = document.getElementById('status');
+    let verificationHandled = false;
 
-    if (error) {
-      status.innerText = `❌ ${error_description.replace(/\+/g, ' ')}`;
-    } else if (access_token && refresh_token) {
-      supabase.auth.setSession({ access_token, refresh_token })
-        .then(() => {
-          status.innerText = "✅ Email verified!";
-          setTimeout(() => {
-            window.location.href = "../"; // or your dashboard page
-          }, 1500);
-        })
-        .catch(() => {
-          status.innerText = "❌ Session setup failed.";
-        });
-    } else {
-      status.innerText = "⚠️ Invalid confirmation link.";
-    }
-  </script>
+    // This listener is the key. It waits for Supabase to signal a sign-in event.
+    // When a user clicks the magic link, Supabase treats it as a successful sign-in.
+    _supabase.auth.onAuthStateChange(async (event, session) => {
+        // We only want to act on the initial SIGNED_IN event from the magic link
+        if (event === "SIGNED_IN" && session && !verificationHandled) {
+            verificationHandled = true;
+
+            // --- SUCCESS ---
+            statusIcon.className = 'status-icon fa-solid fa-circle-check success';
+            statusTitle.textContent = 'Verification Successful!';
+            statusMessage.textContent = 'Your account is now active. You will be automatically redirected to the user panel.';
+            redirectButton.style.display = 'inline-block';
+
+            // Redirect after 3 seconds
+            setTimeout(() => {
+                window.location.href = 'user.html';
+            }, 3000);
+        }
+    });
+
+    // Fallback timer: If after 5 seconds nothing happens, assume the link is bad.
+    setTimeout(() => {
+        if (!verificationHandled) {
+             // --- ERROR ---
+            statusIcon.className = 'status-icon fa-solid fa-circle-xmark error';
+            statusTitle.textContent = 'Verification Failed';
+            statusMessage.textContent = 'This verification link is either invalid or has expired. Please try logging in or signing up again.';
+            redirectButton.style.display = 'inline-block';
+        }
+    }, 5000);
+
+</script>
+
 </body>
 </html>
